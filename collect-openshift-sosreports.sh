@@ -2,6 +2,12 @@
 # Collect sensitive node diagnostics through temporary OpenShift debug pods.
 set -uo pipefail
 umask 077
+prompt_color= timer_color= reset_prompt= reset_timer=
+if [[ -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then
+    if [[ -t 2 ]]; then prompt_color=$'\033[36m'; reset_prompt=$'\033[0m'; fi
+    if [[ -t 1 ]]; then timer_color=$'\033[32m'; reset_timer=$'\033[0m'; fi
+fi
+
 
 if ! command -v oc >/dev/null; then
     echo 'Error: oc is required.' >&2
@@ -10,13 +16,15 @@ fi
 context=$(oc config current-context) || exit 1
 namespace=$(oc config view --minify --context="$context" -o 'jsonpath={..namespace}') || exit 1
 namespace=${namespace:-default}
-read -r -p 'Local directory for sosreports: ' destination
+printf '%sLocal directory for sosreports: %s' "$prompt_color" "$reset_prompt" >&2
+read -r destination || exit 1
 if [[ -z $destination || ! -d $destination || ! -w $destination ]]; then
     echo 'Error: provide an existing writable directory.' >&2
     exit 1
 fi
 destination=$(cd -- "$destination" && pwd -P) || exit 1
-read -r -p 'Remove each node archive after verifying the local copy? [y/N] ' remove_archive || exit 1
+printf '%sRemove each node archive after verifying the local copy? [y/N] %s' "$prompt_color" "$reset_prompt" >&2
+read -r remove_archive || exit 1
 case $remove_archive in
     y|Y|yes|YES) remove_archive=yes ;;
     *) remove_archive=no ;;
@@ -100,8 +108,8 @@ while IFS= read -r node; do
     wait "$debug_pid" 2>/dev/null || :
     debug_pid=
     elapsed=$((SECONDS - node_start))
-    printf 'Elapsed for %s: %02d:%02d:%02d\n' "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))"
+    printf '%sElapsed for %s: %02d:%02d:%02d%s\n' "$timer_color" "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
 done <<< "$nodes"
 elapsed=$((SECONDS - total_start))
-printf 'Total elapsed: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))"
+printf '%sTotal elapsed: %02d:%02d:%02d%s\n' "$timer_color" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
 exit "$failed"
