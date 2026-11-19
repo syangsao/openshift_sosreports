@@ -11,6 +11,8 @@ Collect an sos report from every node in the current OpenShift kubeconfig contex
 ## Run
 
 ```bash
+git clone https://github.com/syangsao/openshift_sosreports.git
+cd openshift_sosreports
 oc config current-context
 ./collect-sosreports.sh
 ```
