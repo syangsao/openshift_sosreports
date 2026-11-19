@@ -16,6 +16,11 @@ if [[ -z $destination || ! -d $destination || ! -w $destination ]]; then
     exit 1
 fi
 destination=$(cd -- "$destination" && pwd -P) || exit 1
+read -r -p 'Remove each node archive after verifying the local copy? [y/N] ' remove_archive || exit 1
+case $remove_archive in
+    y|Y|yes|YES) remove_archive=yes ;;
+    *) remove_archive=no ;;
+esac
 nodes=$(oc --context="$context" get nodes -o name) || exit 1
 if [[ -z $nodes ]]; then
     echo 'Error: no nodes found.' >&2
@@ -61,7 +66,7 @@ while IFS= read -r node; do
         # installed image; sos itself runs non-interactively with --batch.
         if printf 'n\n' | oc --context="$context" -n "$namespace" exec -i "$pod" -- chroot /host toolbox sos report --batch -e openshift --all-logs 2>&1 | tee "$work/sos.log"; then
             archive=$(grep -oE '/host/var/tmp/[^[:space:]]+\.tar\.(xz|gz|bz2|zst)' "$work/sos.log" | tail -n 1 || :)
-            if [[ -z $archive ]]; then
+            if [[ ! $archive =~ ^/host/var/tmp/sosreport-[^/]+\.tar\.(xz|gz|bz2|zst)$ ]]; then
                 echo "Error: could not identify the generated archive for $node" >&2
                 failed=1
             elif [[ -e $destination/${archive##*/} ]]; then
@@ -69,8 +74,21 @@ while IFS= read -r node; do
                 failed=1
             elif oc --context="$context" -n "$namespace" cp "$pod:$archive" "$destination/${archive##*/}"; then
                 echo "Copied to $destination/${archive##*/}"
+                if [[ $remove_archive == yes ]]; then
+                    remote_hash=$(oc --context="$context" -n "$namespace" exec "$pod" -- sha256sum -- "$archive") || remote_hash=
+                    local_hash=$(sha256sum -- "$destination/${archive##*/}") || local_hash=
+                    if [[ -z $remote_hash || -z $local_hash || ${remote_hash%% *} != "${local_hash%% *}" ]]; then
+                        echo "Error: checksum verification failed for $node; node archive retained" >&2
+                        failed=1
+                    elif oc --context="$context" -n "$namespace" exec "$pod" -- rm -- "$archive"; then
+                        echo "Removed node archive $archive"
+                    else
+                        echo "Error: could not remove node archive $archive" >&2
+                        failed=1
+                    fi
+                fi
             else
-                echo "Error: copy failed for $node; archive remains at $archive on the debug pod" >&2
+                echo "Error: copy failed for $node; archive remains on the node at ${archive#/host}" >&2
                 failed=1
             fi
         else

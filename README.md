@@ -19,7 +19,7 @@ oc config current-context
 
 Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node and the total elapsed time at the end. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
 
-The script keeps the debug pod open for the copy and cleans it up afterward. Reports are also left in `/var/tmp` on each node. Toolbox uses an existing cached support-tools image when it asks whether to update it. Review toolbox and registry configuration if collection fails.
+The script keeps the debug pod open for the copy and cleans it up afterward. It asks whether to remove each node's archive after copying; the default is to retain it in `/var/tmp`. If removal is selected, the script verifies the local copy's SHA-256 checksum before deleting the node archive. Failed copies or checksum checks leave the node archive in place. Toolbox uses an existing cached support-tools image when it asks whether to update it. Review toolbox and registry configuration if collection fails.
 
 **Reports contain sensitive system information.** Restrict access to the destination and review archives before sharing them.
 
