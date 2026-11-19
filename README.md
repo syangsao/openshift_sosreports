@@ -17,7 +17,7 @@ oc config current-context
 ./collect-openshift-sosreports.sh
 ```
 
-Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node, the total node count, and the total elapsed time. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
+Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node, the total node count, total copied report size, combined archive size if created, and total elapsed time. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
 
 Prompts, node headings, the node count, and elapsed times are colored when displayed on a terminal. Set `NO_COLOR` to disable colors; redirected output is plain text.
 

@@ -58,6 +58,7 @@ total_start=$SECONDS
 failed=0
 node_count=0
 reports=()
+bundle_created=
 while IFS= read -r node; do
     [[ -n $node ]] || continue
     ((node_count += 1))
@@ -126,6 +127,7 @@ if [[ $combine_reports == yes ]]; then
         failed=1
     elif bundle=$(mktemp "$destination/openshift-sosreports-XXXXXXXX.tar.gz"); then
         if tar -C "$destination" -czf "$bundle" -- "${reports[@]}"; then
+            bundle_created=$bundle
             echo "Combined reports: $bundle"
         else
             echo 'Error: failed to create combined archive' >&2
@@ -134,6 +136,28 @@ if [[ $combine_reports == yes ]]; then
         fi
     else
         echo 'Error: could not create combined archive in destination' >&2
+        failed=1
+    fi
+fi
+total_bytes=0
+sizes_valid=yes
+for report in "${reports[@]}"; do
+    if size=$(stat -c %s -- "$destination/$report"); then
+        ((total_bytes += size))
+    else
+        echo "Error: could not determine size of $destination/$report" >&2
+        sizes_valid=no
+        failed=1
+    fi
+done
+if [[ $sizes_valid == yes ]]; then
+    printf '%sTotal copied report size: %s (%d bytes)%s\n' "$timer_color" "$(numfmt --to=iec-i --suffix=B "$total_bytes")" "$total_bytes" "$reset_timer"
+fi
+if [[ -n $bundle_created ]]; then
+    if size=$(stat -c %s -- "$bundle_created"); then
+        printf '%sCombined archive size: %s (%d bytes)%s\n' "$timer_color" "$(numfmt --to=iec-i --suffix=B "$size")" "$size" "$reset_timer"
+    else
+        echo "Error: could not determine size of $bundle_created" >&2
         failed=1
     fi
 fi
