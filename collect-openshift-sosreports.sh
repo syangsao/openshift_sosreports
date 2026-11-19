@@ -119,7 +119,7 @@ while IFS= read -r node; do
     wait "$debug_pid" 2>/dev/null || :
     debug_pid=
     elapsed=$((SECONDS - node_start))
-    printf '%sElapsed for %s: %02d:%02d:%02d%s\n' "$timer_color" "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
+    printf '%sTotal time for %s: %02d:%02d:%02d%s\n' "$timer_color" "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
 done <<< "$nodes"
 if [[ $combine_reports == yes ]]; then
     if (( ${#reports[@]} == 0 )); then
