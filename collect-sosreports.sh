@@ -35,9 +35,11 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 echo "Context: $context; debug namespace: $namespace; destination: $destination"
+total_start=$SECONDS
 failed=0
 while IFS= read -r node; do
     [[ -n $node ]] || continue
+    node_start=$SECONDS
     echo "=== $node ==="
     : > "$work/debug.log"
     oc --context="$context" debug "$node" --to-namespace="$namespace" -- sleep 86400 > >(tee "$work/debug.log" >&2) 2>&1 &
@@ -79,5 +81,9 @@ while IFS= read -r node; do
     kill "$debug_pid" 2>/dev/null || :
     wait "$debug_pid" 2>/dev/null || :
     debug_pid=
+    elapsed=$((SECONDS - node_start))
+    printf 'Elapsed for %s: %02d:%02d:%02d\n' "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))"
 done <<< "$nodes"
+elapsed=$((SECONDS - total_start))
+printf 'Total elapsed: %02d:%02d:%02d\n' "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))"
 exit "$failed"

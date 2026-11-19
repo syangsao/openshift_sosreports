@@ -15,7 +15,7 @@ oc config current-context
 ./collect-sosreports.sh
 ```
 
-Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
+Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node and the total elapsed time at the end. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
 
 The script keeps the debug pod open for the copy and cleans it up afterward. Reports are also left in `/var/tmp` on each node. Toolbox uses an existing cached support-tools image when it asks whether to update it. Review toolbox and registry configuration if collection fails.
 
