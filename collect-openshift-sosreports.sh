@@ -2,10 +2,10 @@
 # Collect sensitive node diagnostics through temporary OpenShift debug pods.
 set -uo pipefail
 umask 077
-prompt_color= timer_color= reset_prompt= reset_timer=
+prompt_color= timer_color= node_color= reset_prompt= reset_timer=
 if [[ -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then
     if [[ -t 2 ]]; then prompt_color=$'\033[36m'; reset_prompt=$'\033[0m'; fi
-    if [[ -t 1 ]]; then timer_color=$'\033[32m'; reset_timer=$'\033[0m'; fi
+    if [[ -t 1 ]]; then timer_color=$'\033[32m'; node_color=$'\033[34m'; reset_timer=$'\033[0m'; fi
 fi
 
 
@@ -53,7 +53,7 @@ failed=0
 while IFS= read -r node; do
     [[ -n $node ]] || continue
     node_start=$SECONDS
-    echo "=== $node ==="
+    printf '%s=== %s ===%s\n' "$node_color" "$node" "$reset_timer"
     : > "$work/debug.log"
     oc --context="$context" debug "$node" --to-namespace="$namespace" -- sleep 86400 > >(tee "$work/debug.log" >&2) 2>&1 &
     debug_pid=$!
