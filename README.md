@@ -17,11 +17,13 @@ oc config current-context
 ./collect-openshift-sosreports.sh
 ```
 
-Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node and the total elapsed time at the end. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
+Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node, the total node count, and the total elapsed time. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
 
-Prompts, node headings, and elapsed times are colored when displayed on a terminal. Set `NO_COLOR` to disable colors; redirected output is plain text.
+Prompts, node headings, the node count, and elapsed times are colored when displayed on a terminal. Set `NO_COLOR` to disable colors; redirected output is plain text.
 
 The script keeps the debug pod open for the copy and cleans it up afterward. It asks whether to remove each node's archive after copying; the default is to retain it in `/var/tmp`. If removal is selected, the script verifies the local copy's SHA-256 checksum before deleting the node archive. Failed copies or checksum checks leave the node archive in place. Toolbox uses an existing cached support-tools image when it asks whether to update it. Review toolbox and registry configuration if collection fails.
+
+You can also choose to combine the reports successfully copied during the current run into one `openshift-sosreports-*.tar.gz` file in the destination directory. Individual reports remain in place. If some nodes fail, the combined archive contains only the successful copies, and the script still exits nonzero.
 
 **Reports contain sensitive system information.** Restrict access to the destination and review archives before sharing them.
 

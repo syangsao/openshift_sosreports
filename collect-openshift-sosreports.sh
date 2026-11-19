@@ -29,6 +29,12 @@ case $remove_archive in
     y|Y|yes|YES) remove_archive=yes ;;
     *) remove_archive=no ;;
 esac
+printf '%sCombine copied reports into one tar.gz archive? [y/N] %s' "$prompt_color" "$reset_prompt" >&2
+read -r combine_reports || exit 1
+case $combine_reports in
+    y|Y|yes|YES) combine_reports=yes ;;
+    *) combine_reports=no ;;
+esac
 nodes=$(oc --context="$context" get nodes -o name) || exit 1
 if [[ -z $nodes ]]; then
     echo 'Error: no nodes found.' >&2
@@ -50,8 +56,11 @@ trap 'exit 143' TERM
 echo "Context: $context; debug namespace: $namespace; destination: $destination"
 total_start=$SECONDS
 failed=0
+node_count=0
+reports=()
 while IFS= read -r node; do
     [[ -n $node ]] || continue
+    ((node_count += 1))
     node_start=$SECONDS
     printf '%s=== %s ===%s\n' "$node_color" "$node" "$reset_timer"
     : > "$work/debug.log"
@@ -82,6 +91,7 @@ while IFS= read -r node; do
                 failed=1
             elif oc --context="$context" -n "$namespace" cp "$pod:$archive" "$destination/${archive##*/}"; then
                 echo "Copied to $destination/${archive##*/}"
+                reports+=("${archive##*/}")
                 if [[ $remove_archive == yes ]]; then
                     remote_hash=$(oc --context="$context" -n "$namespace" exec "$pod" -- sha256sum -- "$archive") || remote_hash=
                     local_hash=$(sha256sum -- "$destination/${archive##*/}") || local_hash=
@@ -110,6 +120,24 @@ while IFS= read -r node; do
     elapsed=$((SECONDS - node_start))
     printf '%sElapsed for %s: %02d:%02d:%02d%s\n' "$timer_color" "$node" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
 done <<< "$nodes"
+if [[ $combine_reports == yes ]]; then
+    if (( ${#reports[@]} == 0 )); then
+        echo 'Error: no copied reports to combine' >&2
+        failed=1
+    elif bundle=$(mktemp "$destination/openshift-sosreports-XXXXXXXX.tar.gz"); then
+        if tar -C "$destination" -czf "$bundle" -- "${reports[@]}"; then
+            echo "Combined reports: $bundle"
+        else
+            echo 'Error: failed to create combined archive' >&2
+            rm -f -- "$bundle"
+            failed=1
+        fi
+    else
+        echo 'Error: could not create combined archive in destination' >&2
+        failed=1
+    fi
+fi
+printf '%sTotal nodes: %d%s\n' "$timer_color" "$node_count" "$reset_timer"
 elapsed=$((SECONDS - total_start))
 printf '%sTotal elapsed: %02d:%02d:%02d%s\n' "$timer_color" "$((elapsed / 3600))" "$((elapsed % 3600 / 60))" "$((elapsed % 60))" "$reset_timer"
 exit "$failed"
