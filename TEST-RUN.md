@@ -1,6 +1,6 @@
 # Test run
 
-On 2026-11-19, `collect-sosreports.sh` was run against the current kubeconfig context for the `luke` OpenShift cluster. It used the `default` debug namespace and copied reports into a local `sosreports/` directory.
+On 2026-11-19, the script (then named `collect-sosreports.sh`) was run against the current kubeconfig context for the `luke` OpenShift cluster. It used the `default` debug namespace and copied reports into a local `sosreports/` directory.
 
 | Node | Result |
 | --- | --- |

@@ -14,7 +14,7 @@ Collect an sos report from every node in the current OpenShift kubeconfig contex
 git clone https://github.com/syangsao/openshift_sosreports.git
 cd openshift_sosreports
 oc config current-context
-./collect-sosreports.sh
+./collect-openshift-sosreports.sh
 ```
 
 Enter the destination directory when prompted. The script processes nodes sequentially and shows debug pod and sos output as it runs. It prints the elapsed time for each node and the total elapsed time at the end. It enables the `openshift` plugin and collects all logs; archives can be large. It continues to the next node after a failure and exits nonzero if any node fails.
