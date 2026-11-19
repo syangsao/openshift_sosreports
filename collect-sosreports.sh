@@ -40,7 +40,7 @@ while IFS= read -r node; do
     [[ -n $node ]] || continue
     echo "=== $node ==="
     : > "$work/debug.log"
-    oc --context="$context" debug "$node" --to-namespace="$namespace" -- sleep 86400 >"$work/debug.log" 2>&1 &
+    oc --context="$context" debug "$node" --to-namespace="$namespace" -- sleep 86400 > >(tee "$work/debug.log" >&2) 2>&1 &
     debug_pid=$!
     pod=
     for ((attempt=0; attempt<180; attempt++)); do
@@ -53,7 +53,6 @@ while IFS= read -r node; do
     done
     if [[ -z $pod ]] || ! oc --context="$context" -n "$namespace" get pod "$pod" -o 'jsonpath={.status.containerStatuses[0].ready}' 2>/dev/null | grep -qx true; then
         echo "Error: debug pod did not become ready for $node" >&2
-        cat "$work/debug.log" >&2
         failed=1
     else
         # Toolbox may ask whether to update an already cached image. Keep the
